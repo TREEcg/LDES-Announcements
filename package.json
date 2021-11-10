@@ -1,0 +1,52 @@
+{
+  "name": "ldes-announcements",
+  "version": "0.0.1",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rm -rf dist/; tsc",
+    "lint": "eslint . --ext .ts",
+    "publish": "npm run build && npm publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/woutslabbinck/ldes-announcements.git"
+  },
+  "keywords": [
+    "LDES",
+    "Solid",
+    "Linked Data"
+  ],
+  "author": "woutslabbinck <wout.slabbinck@ugent.be>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/woutslabbinck/ldes-announcements/issues"
+  },
+  "homepage": "https://github.com/woutslabbinck/ldes-announcements#readme",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.33.0",
+    "@typescript-eslint/parser": "^4.33.0",
+    "eslint": "^7.32.0",
+    "eslint-config-es": "^3.30.15",
+    "eslint-import-resolver-typescript": "^2.5.0",
+    "eslint-plugin-eslint-comments": "^3.2.0",
+    "eslint-plugin-import": "^2.24.2",
+    "eslint-plugin-mocha": "^9.0.0",
+    "eslint-plugin-tsdoc": "^0.2.14",
+    "eslint-plugin-unicorn": "^38.0.1",
+    "eslint-plugin-unused-imports": "^1.1.5",
+    "typescript": "^4.4.4"
+  },
+  "dependencies": {
+    "@rdfjs/data-model": "^1.3.4",
+    "@treecg/tree-metadata-extraction": "^1.2.1",
+    "@dexagod/rdf-retrieval": "^1.0.2",
+    "n3": "^1.11.1",
+    "rdf-validate-shacl": "^0.3.2",
+    "rdflib": "^2.2.7",
+    "streamify-string": "^1.0.1",
+    "rdf-parse": "^1.9.1"
+  }
+}
