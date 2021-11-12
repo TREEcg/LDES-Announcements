@@ -75,7 +75,7 @@ function extractDatasetIds(store: N3.Store): string[] {
   ids.push(...store.getQuads(null, RDF.type, DCAT.Dataset, null).map(quad => quad.subject.id));
   ids.push(...store.getQuads(null, RDF.type, LDES.EventStream, null).map(quad => quad.subject.id));
 
-  return [ ...new Set(ids) ];
+  return Array.from(new Set(ids));
 }
 
 function extractDataServiceIds(store: N3.Store): string[] {

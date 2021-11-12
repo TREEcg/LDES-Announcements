@@ -34,7 +34,10 @@ module.exports = {
         "padding-line-between-statements": "off",
         '@typescript-eslint/no-use-before-define':'off',
         "@typescript-eslint/space-before-function-paren": "off",
+        'unicorn/prefer-spread':'off',
+        '@typescript-eslint/naming-convention':'off',
         // Import
+        'sort-imports': 'off',
         'import/order': [
             'error',
             {
@@ -47,5 +50,15 @@ module.exports = {
         'import/no-unused-modules': 'off',
         'unused-imports/no-unused-imports-ts': 'error',
         'import/no-extraneous-dependencies': 'error',
+
+        'global-require': 'off',
+        'no-process-env': 'off',
+        '@typescript-eslint/no-require-imports': 'off',
+        '@typescript-eslint/no-var-requires': 'off',
+        '@typescript-eslint/no-unused-vars': 'off',
+        'tsdoc/syntax': 'off',
+        'unicorn/expiring-todo-comments': 'off',
+        'unicorn/import-style': 'off',
+        'unicorn/prefer-array-flat': 'off',
     }
 };

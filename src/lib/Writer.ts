@@ -1,20 +1,17 @@
-import * as path from 'path';
 import { extractMetadata } from '@treecg/tree-metadata-extraction';
 import { Relation } from '@treecg/tree-metadata-extraction/dist/util/Util';
 import * as N3 from 'n3';
 import rdfParser from 'rdf-parse';
-import { Add, Announce, BucketizerConfiguration, Link, Person, View } from './util/ActivityStream';
-import { makeViewContext, writeJSONLDToTurtleSync } from './util/Util';
-import { AS, LDES, TREE, XSD } from './util/Vocabularies';
+import { Add, Announce, BucketizerConfiguration, Link, Person, View } from '../util/Interfaces';
+import { makeViewContext } from '../util/Util';
+import { AS, LDES, TREE, XSD } from '../util/Vocabularies';
+const rdfRetrieval = require('@dexagod/rdf-retrieval');
 
 const bucketizermap: Map<string, string> = new Map<string, string>([
   [ 'substring', 'https://w3id.org/ldes#SubstringBucketizer' ],
   [ 'basic', 'https://w3id.org/ldes#BasicBucketizer' ],
   [ 'subjectpage', 'https://w3id.org/ldes#SubjectPageBucketizer' ]
 ]);
-
-const inbox = 'https://tree.linkeddatafragments.org/inbox/';
-const name = `test${new Date().toISOString()}.ttl`;
 
 /**
  * @interface AnnouncementConfig
@@ -26,7 +23,7 @@ const name = `test${new Date().toISOString()}.ttl`;
  * @member viewId The URL of the root node
  * @member originalLDESURL The URL of the original ldes:EventStream (or tree:Collection)
  */
-interface AnnouncementConfig {
+export interface AnnouncementConfig {
   creatorName: string;
   creatorURL: string;
   propertyPath: string;
@@ -34,17 +31,20 @@ interface AnnouncementConfig {
   bucketizer: string;
   viewId: string;
   originalLDESURL: string;
+  inboxLocation: string;
+  fileName: string;
 }
 
 /**
  * Creates the view that accompanies an announcement
  * @param store contains the triples of the view
- * @param config contains the paramaters req
+ * @param config contains the required parameters
  * @returns {Promise<{view: View, relations: Map<string, Relation>}>}
  */
 async function createView(store: N3.Store, config: AnnouncementConfig):
 Promise<{ view: View; relations: Map<string, Relation> }> {
   // TODO  maybe give relative URL in context for all @ids?
+  // TODO: maybe just expect treemetadata?
   const bucketizer = bucketizermap.get(config.bucketizer);
 
   if (!bucketizer) {
@@ -69,7 +69,7 @@ Promise<{ view: View; relations: Map<string, Relation> }> {
     pageSize: { '@value': config.pageSize, '@type': XSD.positiveInteger },
     path: { '@id': propertyPath },
     bucketizer: { '@id': bucketizer },
-    '@id': `${inbox + name}#bucketizerConfig`
+    '@id': `#bucketizerConfig`
   };
 
   const treeMeta = await extractMetadata(store.getQuads(null, null, null, null));
@@ -81,7 +81,7 @@ Promise<{ view: View; relations: Map<string, Relation> }> {
   }
   const viewConfig: View = {
     '@context': makeViewContext(node['@context']),
-    '@id': `${inbox + name}#view`,
+    '@id': `#view`,
     '@type': node['@type'] ? node['@type'] : [],
     'ldes:configuration': bucketizerConfig,
     'void:subset': { '@id': config.originalLDESURL },
@@ -102,12 +102,11 @@ Promise<{ view: View; relations: Map<string, Relation> }> {
 }
 
 function createAnnouncement(config: AnnouncementConfig): Announce {
-  const permanentUri = inbox + name;
   const asContext = { '@vocab': AS.namespace };
   // Create Link
   const link: Link = {
     '@context': asContext,
-    '@id': `${permanentUri}#link`,
+    '@id': `#link`,
     '@type': [ AS.Link ],
     href: { '@id': config.originalLDESURL },
     // Todo
@@ -117,7 +116,7 @@ function createAnnouncement(config: AnnouncementConfig): Announce {
   // Create Person
   const person: Person = {
     '@context': asContext,
-    '@id': `${permanentUri}#person`,
+    '@id': `#person`,
     '@type': [ AS.Person ],
     name: config.creatorName,
     url: { '@id': config.creatorURL }
@@ -126,7 +125,7 @@ function createAnnouncement(config: AnnouncementConfig): Announce {
   // Create Add
   const add: Add = {
     '@context': asContext,
-    '@id': `${permanentUri}#add`,
+    '@id': `#add`,
     '@type': [ AS.Add ],
     actor: person,
     // Todo
@@ -137,7 +136,7 @@ function createAnnouncement(config: AnnouncementConfig): Announce {
   // Create Announcement
   const announcement: Announce = {
     '@context': asContext,
-    '@id': `${permanentUri}#announce`,
+    '@id': `#announce`,
     '@type': [ AS.Announce ],
     actor: person,
     object: add
@@ -146,97 +145,29 @@ function createAnnouncement(config: AnnouncementConfig): Announce {
   return announcement;
 }
 
-const rdfRetrieval = require('@dexagod/rdf-retrieval');
+/**
+ * Creates a view announcement, which can be send to an inbox
+ * @param store contains the triples of the view
+ * @param config contains the required parameters
+ * @returns {Promise<string>}
+ */
+export async function createViewAnnouncement(store: N3.Store, config: AnnouncementConfig) {
+  const view = await createView(store, config);
+  const announcement = createAnnouncement(config);
 
-async function execute() {
-  const store = await rdfRetrieval.getResourceAsStore(path.join(module.path, '../data/gemeente.ttl'));
-  const config = {
-    url: 'https://smartdata.dev-vlaanderen.be/base/gemeente',
-    storage: 'output',
-    gh_pages_branch: '',
-    gh_pages_url: 'https://test/',
-    git_username: 'woutslabbinck',
-    git_email: 'wout.slabbinck@ugent.be',
-    fragmentation_strategy: 'substring',
-    fragmentation_page_size: 100,
-    datasource_strategy: 'ldes-client',
-    property_path: '<http://www.w3.org/2000/01/rdf-schema#label>',
-    stream_data: true,
-    timeout: 3_600_000
-  };
-  const announcementConfig: AnnouncementConfig = {
-    bucketizer: config.fragmentation_strategy,
-    creatorName: config.git_username,
-    creatorURL: `https://github.com/${config.git_username}`,
-    originalLDESURL: config.url,
-    pageSize: config.fragmentation_page_size.toString(),
-    // Note that this will be empty in the case of the basic one -> EDIT SHAPE
-    propertyPath: config.property_path,
-    // Note that the generated view id with basic is 0.ttl instead of root.ttl -> MAKE A HELPER FUNCTION
-    viewId: `${config.gh_pages_url + config.storage}/root.ttl`
-  };
-  const view = await createView(store, announcementConfig);
-  // From the view object and its relations: make one graph
-  const jsonList = [];
-
-  // Add view
-  jsonList.push(view.view);
-  view.relations.forEach((value, key) => {
-    jsonList.push(value);
-  });
-  const viewJsonLD = JSON.stringify(jsonList);
-
-  // Create announcement
-  const announcement = createAnnouncement(announcementConfig);
-
-  // Add the view (which can be done as uri or as view object)
-  announcement.object.object = view.view;
+  (<Add> announcement.object).object = view.view;
   const announcementJsonList = [];
 
+  // Add the view (which can be done as uri or as view object)
   announcementJsonList.push(announcement);
   view.relations.forEach((value, key) => {
     announcementJsonList.push(value);
   });
   const announcementJsonLd = JSON.stringify(announcementJsonList);
 
-  // Transform jsonld to text
+  // Transform jsonld to text (Not possible currently due to relative URLs like #view)
   const textStream = require('streamify-string')(announcementJsonLd);
   const stream = rdfParser.parse(textStream, { contentType: 'application/ld+json' });
-
-  const text = await rdfRetrieval.quadStreamToString(stream);
-  // Console.log(text);
-
-  // Write view to turtle file
-  const dataPath = path.join(module.path, '../data/');
-
-  writeJSONLDToTurtleSync(viewJsonLD, path.join(dataPath, 'gemeente_view.ttl'));
-  // Write announcement to turtle file
-  writeJSONLDToTurtleSync(announcementJsonLd, path.join(dataPath, 'gemeente_announcement.ttl'));
-
-  // Send request to server
-  // json ld needs other names
-  // const response = await fetch(inbox, {
-  //   method: 'POST',
-  //   headers: {
-  //     'Content-Type': 'application/ld+json',
-  //     Link: '<http://www.w3.org/ns/ldp#Resource>; rel="type"',
-  //     slug: name,
-  //   },
-  //   body: announcementJsonLd,
-  // });
-  const response = await fetch(inbox, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'text/turtle',
-      Link: '<http://www.w3.org/ns/ldp#Resource>; rel="type"',
-      slug: name
-    },
-    body: text
-
-  });
-
-  console.log(response.status);
-  console.log(response.statusText);
+  const text: string = await rdfRetrieval.quadStreamToString(stream);
+  return announcementJsonLd;
 }
-
-execute();

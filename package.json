@@ -37,7 +37,8 @@
     "eslint-plugin-tsdoc": "^0.2.14",
     "eslint-plugin-unicorn": "^38.0.1",
     "eslint-plugin-unused-imports": "^1.1.5",
-    "typescript": "^4.4.4"
+    "typescript": "^4.4.4",
+    "ts-node": "^10.2.1"
   },
   "dependencies": {
     "@rdfjs/data-model": "^1.3.4",
