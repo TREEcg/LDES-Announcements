@@ -131,6 +131,6 @@ async function writeAnnouncement() {
   console.log(response.headers);
 }
 // Execute reading all announcements using root?
-// executeRetrievingAllAnouncementsv2('https://tree.linkeddatafragments.org/announcements/1636985640000/');
+executeRetrievingAllAnouncementsv2('https://tree.linkeddatafragments.org/announcements/1636985640000/');
 // Execute writing based on output of LDES-action
-writeAnnouncement();
+// writeAnnouncement();

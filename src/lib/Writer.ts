@@ -9,7 +9,7 @@ import { extractMetadata } from '@treecg/tree-metadata-extraction';
 import { Collection } from '@treecg/tree-metadata-extraction/src/util/Util';
 import * as N3 from 'n3';
 import rdfParser from 'rdf-parse';
-import { Announce, BucketizerConfiguration, View } from '../util/Interfaces';
+import { Announce, BucketizerConfiguration, ReverseCollection, View } from '../util/Interfaces';
 import { makeViewContext } from '../util/Util';
 import { AS, LDES, TREE, XSD } from '../util/Vocabularies';
 const rdfRetrieval = require('@dexagod/rdf-retrieval');
@@ -83,6 +83,15 @@ async function createView(store: N3.Store, config: AnnouncementConfig): Promise<
   if (!node) {
     throw new Error(`The tree:node (a view) ${config.viewId} was not found in the store.`);
   }
+  const collection: Collection = {
+    '@id': config.originalLDESURL
+  };
+
+  const reverse: ReverseCollection = {
+    '@context': { '@vocab': TREE.namespace },
+    view: collection
+  };
+
   const viewConfig: View = {
     'dct:isVersionOf': { '@id': config.viewId },
     'dct:issued': { '@value': new Date().toISOString(), '@type': XSD.dateTime },
@@ -90,6 +99,7 @@ async function createView(store: N3.Store, config: AnnouncementConfig): Promise<
     '@id': `#view`,
     '@type': node['@type'] ? node['@type'] : [],
     'ldes:configuration': bucketizerConfig,
+    '@reverse': reverse,
     conditionalImport: node.conditionalImport,
     import: node.import,
     importStream: node.import,
@@ -97,11 +107,6 @@ async function createView(store: N3.Store, config: AnnouncementConfig): Promise<
     search: node.search
   };
 
-  const collection: Collection = {
-    '@id': config.originalLDESURL,
-    '@context': { '@vocab': TREE.namespace },
-    view: [{ '@id': '#view' }]
-  };
   return { view: viewConfig, collection };
 }
 

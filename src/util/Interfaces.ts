@@ -1,4 +1,4 @@
-import { Literal, Node, URI } from '@treecg/tree-metadata-extraction/src/util/Util';
+import { Collection, Literal, Node, URI } from '@treecg/tree-metadata-extraction/src/util/Util';
 
 // AS interfaces
 
@@ -46,12 +46,18 @@ export interface DataService extends Resource {
   'dct:title': string;
 }
 
+export interface ReverseCollection {
+  '@context'?: string | object;
+  'view': Collection;
+}
+
 // LDES/TREE interfaces
 export interface View extends Node {
   '@type': string[];
   'dct:isVersionOf': URI;
   'dct:issued': Literal;
   'ldes:configuration': BucketizerConfiguration;
+  '@reverse': ReverseCollection;
 }
 
 export interface BucketizerConfiguration {
@@ -62,4 +68,3 @@ export interface BucketizerConfiguration {
   'pageSize': Literal;
   'bucketizer': URI;
 }
-

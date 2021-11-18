@@ -14,7 +14,7 @@ import {
   DataService,
   DataSet,
   View,
-  BucketizerConfiguration
+  BucketizerConfiguration, ReverseCollection
 } from '../util/Interfaces';
 import { makeViewContext, retrieveTerm } from '../util/Util';
 import { AS, DCAT, DCT, LDES, RDF, TREE } from '../util/Vocabularies';
@@ -128,10 +128,15 @@ function extractDataService(store: N3.Store, id: string): DataService {
   return dataService;
 }
 
-function extractView(store: N3.Store, id: string, treeMetadata: { nodes: Map<any, any> }): View {
+function extractView(store: N3.Store, id: string, treeMetadata: { nodes: Map<any, any>; collections: Map<any, any> }): View {
   const configurationId = store.getQuads(id, LDES.configuration, null, null)[0].object.id;
+  const collectionId = store.getQuads(null, TREE.view, id, null)[0].subject.id;
   const node: Node = treeMetadata.nodes.get(id)!;
 
+  const reverseCollection: ReverseCollection = {
+    '@context': { '@vocab': TREE.namespace },
+    view: { '@id': collectionId }
+  };
   const bucketizerConfiguration: BucketizerConfiguration = {
     '@id': configurationId,
     '@context': { '@vocab': LDES.namespace, path: TREE.path },
@@ -148,6 +153,7 @@ function extractView(store: N3.Store, id: string, treeMetadata: { nodes: Map<any
     'ldes:configuration': bucketizerConfiguration,
     'dct:isVersionOf': store.getQuads(id, DCT.isVersionOf, null, null).map(quad => retrieveTerm(store, quad.object))[0],
     'dct:issued': store.getQuads(id, DCT.issued, null, null).map(quad => retrieveTerm(store, quad.object))[0],
+    '@reverse': reverseCollection,
     conditionalImport: node.conditionalImport,
     import: node.import,
     importStream: node.import,
