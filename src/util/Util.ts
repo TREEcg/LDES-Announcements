@@ -6,23 +6,18 @@
  *****************************************/
 
 import fs from 'fs';
+import { Literal } from '@treecg/tree-metadata-extraction/src/util/Util';
 import * as N3 from 'n3';
 import { Writer } from 'n3';
 import rdfParser from 'rdf-parse';
-import { LDES, RDF, TREE, VOID } from './Vocabularies';
-
-export interface Literal {
-  '@value': string;
-  '@type'?: string;
-  '@language'?: string;
-}
+import { DCT, LDES, RDF, TREE } from './Vocabularies';
 
 /**
  * Retrieve base object
  * @param store
  * @param term
  */
-export function retrieveTerm(store: N3.Store, term: N3.Term) {
+export function retrieveTerm(store: N3.Store, term: N3.Term): any {
   return retrieveFullObject(store, term, false);
 }
 
@@ -33,7 +28,7 @@ export function retrieveTerm(store: N3.Store, term: N3.Term) {
  * @param recursive
  * @param processedIds
  */
-function retrieveFullObject(store: N3.Store, term: N3.Term, recursive = true, processedIds: string[] = []) {
+function retrieveFullObject(store: N3.Store, term: N3.Term, recursive = true, processedIds: string[] = []): any {
   switch (term.termType) {
     case 'Literal':
       return createLiteral(store, term);
@@ -81,7 +76,7 @@ const createLiteral = (store: N3.Store, literal: N3.Literal): Literal => {
  * @param namedNode
  * @param processedIds
  */
-const createObject = (store: N3.Store, namedNode: N3.NamedNode | N3.BlankNode, processedIds: string[]) => {
+const createObject = (store: N3.Store, namedNode: N3.NamedNode | N3.BlankNode, processedIds: string[]): any => {
   const item: any = namedNode.termType === 'NamedNode' ? { '@id': namedNode.id } : {};
   const quads = store.getQuads(namedNode.id, null, null, null);
 
@@ -122,9 +117,8 @@ export function makeViewContext(treeContext: string | Record<string, any> | unde
   } else {
     viewContext = treeContext;
     viewContext.ldes = LDES.namespace;
-    viewContext.void = VOID.namespace;
+    viewContext.dct = DCT.namespace;
   }
-
   return viewContext;
 }
 
@@ -133,7 +127,7 @@ export function writeJSONLDToTurtleSync(jsonLD: string, path: string): void {
   const stream = rdfParser.parse(textStream, { contentType: 'application/ld+json' });
   const resultStore = new N3.Store();
 
-  resultStore.import(stream).on('end', () => {
+  resultStore.import(stream).on('end', (): void => {
     const writer = new Writer();
     let stringResult: string;
 

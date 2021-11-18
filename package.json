@@ -48,6 +48,7 @@
     "rdf-validate-shacl": "^0.3.2",
     "rdflib": "^2.2.7",
     "streamify-string": "^1.0.1",
-    "rdf-parse": "^1.9.1"
+    "rdf-parse": "^1.9.1",
+    "rdf-js": "^4.0.2"
   }
 }

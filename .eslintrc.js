@@ -36,6 +36,7 @@ module.exports = {
         "@typescript-eslint/space-before-function-paren": "off",
         'unicorn/prefer-spread':'off',
         '@typescript-eslint/naming-convention':'off',
+        "prefer-destructuring": "off",
         // Import
         'sort-imports': 'off',
         'import/order': [

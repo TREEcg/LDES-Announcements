@@ -82,6 +82,7 @@ export const DCT = createUriAndTermNamespace('http://purl.org/dc/terms/',
   'description',
   'identifier',
   'issued',
+  'isVersionOf',
   'license',
   'subject',
   'title');
@@ -98,7 +99,8 @@ export const LDP = createUriAndTermNamespace('http://www.w3.org/ns/ldp#',
   'BasicContainer',
   'Container',
   'Resource',
-  'constrainedBy');
+  'constrainedBy',
+  'inbox');
 
 export const SH = createUriAndTermNamespace('http://www.w3.org/ns/shacl#',
   'targetClass',
@@ -117,4 +119,5 @@ export const VOID = createUriAndTermNamespace('http://rdfs.org/ns/void#',
   'subset');
 
 export const XSD = createUriAndTermNamespace('http://www.w3.org/2001/XMLSchema#',
-  'positiveInteger');
+  'positiveInteger',
+  'dateTime');

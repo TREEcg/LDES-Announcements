@@ -1,35 +1,12 @@
 import { Literal, Node, URI } from '@treecg/tree-metadata-extraction/src/util/Util';
 
 // AS interfaces
-export interface Object {
+
+export interface Announce {
   '@context'?: string | object;
   '@id': string;
   '@type': string[];
-  'name'?: string;
-}
-
-export interface Activity extends Object {
-  'summary'?: string;
-  'actor': Object;
-  'object': Object;
-}
-
-export type Announce = Activity;
-
-export interface Person extends Object {
-  'name': string;
-  'url': URI;
-}
-
-export interface Link extends Object {
-  'href': URI;
-  'hreflang'?: string;
-  'mediaType'?: string;
-  'name'?: string;
-}
-
-export interface Add extends Activity {
-  'url': Link;
+  'actor': URI;
   'object': View | DataSet | DataService | string;
 }
 
@@ -43,7 +20,7 @@ export interface Resource {
   'dct:creator'?: URI;
   'dct:description'?: string;
   'dct:identifier'?: string;
-  'dct:issued'?: string;
+  'dct:issued'?: Literal;
   'dct:license'?: URI;
   'dct:title'?: string;
 }
@@ -52,7 +29,7 @@ export interface DataSet extends Resource {
   'dct:creator': URI;
   'dct:description': string;
   'dct:identifier': string;
-  'dct:issued': string;
+  'dct:issued': Literal;
   'dct:license': URI;
   'dct:title': string;
   'tree:shape': string;
@@ -72,7 +49,8 @@ export interface DataService extends Resource {
 // LDES/TREE interfaces
 export interface View extends Node {
   '@type': string[];
-  'void:subset': URI;
+  'dct:isVersionOf': URI;
+  'dct:issued': Literal;
   'ldes:configuration': BucketizerConfiguration;
 }
 

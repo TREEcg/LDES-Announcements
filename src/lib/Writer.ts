@@ -1,8 +1,15 @@
+/** *************************************
+ * Title: Writer
+ * Description: Creation of announcements, views (, datasets and dataservices)
+ * Author: Wout Slabbinck (wout.slabbinck@ugent.be)
+ * Created on 9/11/2021
+ *****************************************/
+
 import { extractMetadata } from '@treecg/tree-metadata-extraction';
-import { Relation } from '@treecg/tree-metadata-extraction/dist/util/Util';
+import { Collection } from '@treecg/tree-metadata-extraction/src/util/Util';
 import * as N3 from 'n3';
 import rdfParser from 'rdf-parse';
-import { Add, Announce, BucketizerConfiguration, Link, Person, View } from '../util/Interfaces';
+import { Announce, BucketizerConfiguration, View } from '../util/Interfaces';
 import { makeViewContext } from '../util/Util';
 import { AS, LDES, TREE, XSD } from '../util/Vocabularies';
 const rdfRetrieval = require('@dexagod/rdf-retrieval');
@@ -31,26 +38,23 @@ export interface AnnouncementConfig {
   bucketizer: string;
   viewId: string;
   originalLDESURL: string;
-  inboxLocation: string;
-  fileName: string;
 }
 
 /**
  * Creates the view that accompanies an announcement
  * @param store contains the triples of the view
  * @param config contains the required parameters
- * @returns {Promise<{view: View, relations: Map<string, Relation>}>}
+ * @returns {Promise<{view: View, collection: Collection>}
  */
-async function createView(store: N3.Store, config: AnnouncementConfig):
-Promise<{ view: View; relations: Map<string, Relation> }> {
-  // TODO  maybe give relative URL in context for all @ids?
-  // TODO: maybe just expect treemetadata?
+async function createView(store: N3.Store, config: AnnouncementConfig): Promise<{ view: View; collection: Collection }> {
   const bucketizer = bucketizermap.get(config.bucketizer);
 
   if (!bucketizer) {
     const options: string[] = [];
 
-    bucketizermap.forEach((value, key) => options.push(key));
+    bucketizermap.forEach((value, key): void => {
+      options.push(key);
+    });
     throw new Error(`${config.bucketizer} is not a valid bucketizer. valid options are: ${options}.`);
   }
 
@@ -80,66 +84,37 @@ Promise<{ view: View; relations: Map<string, Relation> }> {
     throw new Error(`The tree:node (a view) ${config.viewId} was not found in the store.`);
   }
   const viewConfig: View = {
+    'dct:isVersionOf': { '@id': config.viewId },
+    'dct:issued': { '@value': new Date().toISOString(), '@type': XSD.dateTime },
     '@context': makeViewContext(node['@context']),
     '@id': `#view`,
     '@type': node['@type'] ? node['@type'] : [],
     'ldes:configuration': bucketizerConfig,
-    'void:subset': { '@id': config.originalLDESURL },
     conditionalImport: node.conditionalImport,
     import: node.import,
     importStream: node.import,
-    relation: node.relation,
     retentionPolicy: node.retentionPolicy,
     search: node.search
   };
-  const relations: Map<string, Relation> = new Map();
 
-  viewConfig.relation?.forEach(relationId => {
-    relations.set(relationId['@id'], treeMeta.relations.get(relationId['@id']));
-  });
-
-  return { view: viewConfig, relations };
+  const collection: Collection = {
+    '@id': config.originalLDESURL,
+    '@context': { '@vocab': TREE.namespace },
+    view: [{ '@id': '#view' }]
+  };
+  return { view: viewConfig, collection };
 }
 
 function createAnnouncement(config: AnnouncementConfig): Announce {
   const asContext = { '@vocab': AS.namespace };
-  // Create Link
-  const link: Link = {
-    '@context': asContext,
-    '@id': `#link`,
-    '@type': [ AS.Link ],
-    href: { '@id': config.originalLDESURL },
-    // Todo
-    name: 'To be replaced: currently this links to the original LDES as the rest is not implemented yet.'
-  };
-
-  // Create Person
-  const person: Person = {
-    '@context': asContext,
-    '@id': `#person`,
-    '@type': [ AS.Person ],
-    name: config.creatorName,
-    url: { '@id': config.creatorURL }
-  };
-
-  // Create Add
-  const add: Add = {
-    '@context': asContext,
-    '@id': `#add`,
-    '@type': [ AS.Add ],
-    actor: person,
-    // Todo
-    object: 'TODO: should I do this here or later? Maybe with an URI instead of string?',
-    url: link
-  };
 
   // Create Announcement
   const announcement: Announce = {
     '@context': asContext,
     '@id': `#announce`,
     '@type': [ AS.Announce ],
-    actor: person,
-    object: add
+    actor: { '@id': config.creatorURL },
+    object: 'temp'
   };
 
   return announcement;
@@ -151,18 +126,16 @@ function createAnnouncement(config: AnnouncementConfig): Announce {
  * @param config contains the required parameters
  * @returns {Promise<string>}
  */
-export async function createViewAnnouncement(store: N3.Store, config: AnnouncementConfig) {
+export async function createViewAnnouncement(store: N3.Store, config: AnnouncementConfig): Promise<string> {
   const view = await createView(store, config);
   const announcement = createAnnouncement(config);
 
-  (<Add> announcement.object).object = view.view;
+  announcement.object = view.view;
   const announcementJsonList = [];
 
   // Add the view (which can be done as uri or as view object)
   announcementJsonList.push(announcement);
-  view.relations.forEach((value, key) => {
-    announcementJsonList.push(value);
-  });
+  announcementJsonList.push(view.collection);
   const announcementJsonLd = JSON.stringify(announcementJsonList);
 
   // Transform jsonld to text (Not possible currently due to relative URLs like #view)

@@ -1,45 +1,12 @@
 import path from 'path';
-import { Relation } from '@treecg/tree-metadata-extraction/dist/util/Util';
+import { Collection } from '@treecg/tree-metadata-extraction/src/util/Util';
 import { Store } from 'n3';
 import { extractAnnouncementsMetadata } from './lib/Extraction';
 import { AnnouncementConfig, createViewAnnouncement } from './lib/Writer';
-import { Activity, View, DataSet, DataService } from './util/Interfaces';
+import { View, DataSet, DataService, Announce } from './util/Interfaces';
 import { writeJSONLDToTurtleSync } from './util/Util';
-import { LDP } from './util/Vocabularies';
+import { LDP, TREE } from './util/Vocabularies';
 const rdfRetrieval = require('@dexagod/rdf-retrieval');
-
-/**
- * Fetches all resources ids from an announcement container which should contain an actual announcement.
- * This method is mainly made to marginally limit internet traffic.
- * @param announcementsUri
- * @returns {Promise<string[]>}
- */
-export async function fetchAnnouncementIds(announcementsUri: string): Promise<string []> {
-  return await fetchFilteredResourceIds(announcementsUri, [ LDP.constrainedBy ]);
-}
-
-/**
- * Fetches all the Resource Ids from an LDP container apart from the resources which are object from a triple in the style
- * <containerUri> <predicate> <object>.
- * Here the predicate is an element of predicates.
- * @param containerUri          Uri of an LDP container
- * @param predicates            List of predicates
- * @returns {Promise<any>}      List of filtered Resource Ids
- */
-export async function fetchFilteredResourceIds(containerUri: string, predicates: string []): Promise<string []> {
-  const store: Store = await rdfRetrieval.getResourceAsStore(containerUri);
-
-  const toRemoveIds: string [] = [];
-
-  for (const predicate of predicates) {
-    toRemoveIds.push(...store.getObjects(containerUri, predicate, null).map((object: any) => object.id));
-  }
-  // Filter out the Resource ids
-  const resourceIds: string [] = store.getObjects(containerUri, LDP.contains, null).map((object: any) => object.id);
-  const intermediaryIds = new Set(resourceIds);
-  toRemoveIds.forEach(id => intermediaryIds.delete(id));
-  return Array.from(intermediaryIds);
-}
 
 // Can also be more modular by calling fetchFilteredREsourceIds(uri, [])
 export async function fetchResourceIds(containerUri: string): Promise<string []> {
@@ -67,24 +34,22 @@ export async function fetchAllResources(uri: string): Promise<Store> {
   return await createResourceStore(resourceIds);
 }
 
-export async function fetchAllResourcesFiltered(uri: string, predicates: string[]): Promise<Store> {
-  const resourceIds = await fetchFilteredResourceIds(uri, predicates);
-  return await createResourceStore(resourceIds);
-}
-
 async function executeRetrievingAllAnouncementsv2(uri: string) {
   const store = await fetchAllResources(uri);
   const data = await extractAnnouncementsMetadata(store);
-  const json: (Activity | View | Relation | DataSet | DataService)[] = [];
-
+  const json: (Announce | View | DataSet | DataService | Collection)[] = [];
   data.announcements.forEach(value => {
     json.push(value);
   });
   data.views.forEach(value => {
-    json.push(value.view);
-    value.relations.forEach(value => {
-      json.push(value);
-    });
+    json.push(value);
+    const collectionQuad = store.getQuads(null, TREE.view, value['@id'], null)[0];
+    const collection: Collection = {
+      '@id': collectionQuad.subject.id,
+      '@context': { '@vocab': TREE.namespace },
+      view: [{ '@id': collectionQuad.object.id }]
+    };
+    json.push(collection);
   });
   data.datasets.forEach(value => {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -99,12 +64,10 @@ async function executeRetrievingAllAnouncementsv2(uri: string) {
   writeJSONLDToTurtleSync(JSON.stringify(json), 'test.ttl');
 }
 
-async function execute() {
-  const store = await rdfRetrieval.getResourceAsStore(path.join(module.path, '../data/gemeente.ttl'));
-  const inbox = 'https://tree.linkeddatafragments.org/inbox/';
-  const name = `test${new Date().toISOString()}.ttl`;
+async function writeAnnouncement() {
+  const inbox = 'https://tree.linkeddatafragments.org/announcements/';
 
-  const config = {
+  const substringConfig = {
     url: 'https://smartdata.dev-vlaanderen.be/base/gemeente',
     storage: 'output',
     gh_pages_branch: '',
@@ -118,6 +81,19 @@ async function execute() {
     stream_data: true,
     timeout: 3_600_000
   };
+
+  const basicConfig: Record<string, any> = { ...substringConfig };
+  delete basicConfig.property_path;
+  basicConfig.fragmentation_strategy = 'basic';
+
+  // Choose config here
+  const config = substringConfig;
+
+  // Store has te be created based on the config
+  const rootFileName = config.fragmentation_strategy === 'substring' || config.fragmentation_strategy === 'subject-page' ? 'root.ttl' : '0.ttl';
+  // TODO: '../data/' MUST be replaced by config.storage in LDES action
+  const storageLocation = path.join(module.path, config.storage, rootFileName);
+  const store = await rdfRetrieval.getResourceAsStore(path.join(module.path, '../data/', rootFileName));
   const announcementConfig: AnnouncementConfig = {
     bucketizer: config.fragmentation_strategy,
     creatorName: config.git_username,
@@ -126,16 +102,22 @@ async function execute() {
     pageSize: config.fragmentation_page_size.toString(),
     // Note that this will be empty in the case of the basic one -> EDIT SHAPE
     propertyPath: config.property_path,
-    // Note that the generated view id with basic is 0.ttl instead of root.ttl -> MAKE A HELPER FUNCTION
-    viewId: `${config.gh_pages_url + config.storage}/root.ttl`,
-    inboxLocation: '',
-    fileName: ''
+    viewId: `${config.gh_pages_url + config.storage}/${rootFileName}`
   };
 
   const announcementJson = await createViewAnnouncement(store, announcementConfig);
-
+  const currentInboxResponse = await fetch(inbox, {
+    method: 'HEAD'
+  });
+  const parse = require('parse-link-header');
+  const linkHeaders = parse(currentInboxResponse.headers.get('link'));
+  const inboxLink = linkHeaders[LDP.inbox];
+  if (!inboxLink) {
+    throw new Error('No http://www.w3.org/ns/ldp#inbox Link Header present.');
+  }
+  const location = `${inboxLink.url}/`;
   // Send request to server
-  const response = await fetch(inbox, {
+  const response = await fetch(location, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/ld+json',
@@ -148,6 +130,7 @@ async function execute() {
   console.log(response.statusText);
   console.log(response.headers);
 }
-
-execute();
-executeRetrievingAllAnouncementsv2('https://tree.linkeddatafragments.org/inbox/');
+// Execute reading all announcements using root?
+// executeRetrievingAllAnouncementsv2('https://tree.linkeddatafragments.org/announcements/1636985640000/');
+// Execute writing based on output of LDES-action
+writeAnnouncement();
