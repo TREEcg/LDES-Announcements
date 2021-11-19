@@ -46,7 +46,7 @@ export interface AnnouncementConfig {
  * @param config contains the required parameters
  * @returns {Promise<{view: View, collection: Collection>}
  */
-async function createView(store: N3.Store, config: AnnouncementConfig): Promise<{ view: View; collection: Collection }> {
+async function createView(store: N3.Store, config: AnnouncementConfig): Promise<View> {
   const bucketizer = bucketizermap.get(config.bucketizer);
 
   if (!bucketizer) {
@@ -107,7 +107,7 @@ async function createView(store: N3.Store, config: AnnouncementConfig): Promise<
     search: node.search
   };
 
-  return { view: viewConfig, collection };
+  return viewConfig;
 }
 
 function createAnnouncement(config: AnnouncementConfig): Announce {
@@ -131,21 +131,17 @@ function createAnnouncement(config: AnnouncementConfig): Announce {
  * @param config contains the required parameters
  * @returns {Promise<string>}
  */
-export async function createViewAnnouncement(store: N3.Store, config: AnnouncementConfig): Promise<string> {
+export async function createViewAnnouncement(store: N3.Store, config: AnnouncementConfig): Promise<Announce> {
   const view = await createView(store, config);
   const announcement = createAnnouncement(config);
 
-  announcement.object = view.view;
-  const announcementJsonList = [];
-
   // Add the view (which can be done as uri or as view object)
-  announcementJsonList.push(announcement);
-  announcementJsonList.push(view.collection);
-  const announcementJsonLd = JSON.stringify(announcementJsonList);
+  announcement.object = view;
 
   // Transform jsonld to text (Not possible currently due to relative URLs like #view)
+  const announcementJsonLd = JSON.stringify(announcement);
   const textStream = require('streamify-string')(announcementJsonLd);
   const stream = rdfParser.parse(textStream, { contentType: 'application/ld+json' });
   const text: string = await rdfRetrieval.quadStreamToString(stream);
-  return announcementJsonLd;
+  return announcement;
 }

@@ -2,10 +2,12 @@ import path from 'path';
 import { Collection } from '@treecg/tree-metadata-extraction/src/util/Util';
 import { Store } from 'n3';
 import { extractAnnouncementsMetadata } from './lib/Extraction';
+import { fetchAllAnnouncements, postAnnouncement } from './lib/LDPCommunication';
 import { AnnouncementConfig, createViewAnnouncement } from './lib/Writer';
 import { View, DataSet, DataService, Announce } from './util/Interfaces';
 import { writeJSONLDToTurtleSync } from './util/Util';
 import { LDP, TREE } from './util/Vocabularies';
+
 const rdfRetrieval = require('@dexagod/rdf-retrieval');
 
 // Can also be more modular by calling fetchFilteredREsourceIds(uri, [])
@@ -105,32 +107,33 @@ async function writeAnnouncement() {
     viewId: `${config.gh_pages_url + config.storage}/${rootFileName}`
   };
 
-  const announcementJson = await createViewAnnouncement(store, announcementConfig);
-  const currentInboxResponse = await fetch(inbox, {
-    method: 'HEAD'
-  });
-  const parse = require('parse-link-header');
-  const linkHeaders = parse(currentInboxResponse.headers.get('link'));
-  const inboxLink = linkHeaders[LDP.inbox];
-  if (!inboxLink) {
-    throw new Error('No http://www.w3.org/ns/ldp#inbox Link Header present.');
-  }
-  const location = `${inboxLink.url}/`;
-  // Send request to server
-  const response = await fetch(location, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/ld+json',
-      Link: '<http://www.w3.org/ns/ldp#Resource>; rel="type"'
-    },
-    body: announcementJson
+  const announcement = await createViewAnnouncement(store, announcementConfig);
+  const announcementJson = JSON.stringify(announcement);
+  console.log(announcementJson);
 
-  });
+  const response = await postAnnouncement(announcement, inbox);
   console.log(response.status);
   console.log(response.statusText);
   console.log(response.headers);
 }
-// Execute reading all announcements using root?
-executeRetrievingAllAnouncementsv2('https://tree.linkeddatafragments.org/announcements/1636985640000/');
-// Execute writing based on output of LDES-action
-// writeAnnouncement();
+
+async function executeFetchingAnnouncements() {
+  const store = await fetchAllAnnouncements('https://tree.linkeddatafragments.org/announcements/');
+  const announcements = await extractAnnouncementsMetadata(store);
+  announcements.views.forEach(value => {
+    console.log(value['dct:issued']['@value']);
+    console.log(value['@reverse'].view['@id']);
+  });
+}
+
+async function execute() {
+  // Execute reading all announcements using root?
+  // await executeRetrievingAllAnouncementsv2('https://tree.linkeddatafragments.org/announcements/1636985640000/');
+  // Execute writing based on output of LDES-action
+  await writeAnnouncement();
+  // ExecuteFetchingAnnouncements
+  // await executeFetchingAnnouncements();
+}
+
+execute();
+
