@@ -1,18 +1,18 @@
 {
-  "name": "ldes-announcements",
-  "version": "0.0.1",
+  "name": "@treecg/ldes-announcements",
+  "version": "0.0.3",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --require ts-node/register ./src/test.ts",
     "build": "rm -rf dist/; tsc",
     "lint": "eslint . --ext .ts",
     "publish": "npm run build && npm publish"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/woutslabbinck/ldes-announcements.git"
+    "url": "git+https://github.com/treecg/LDES-Announcements.git"
   },
   "keywords": [
     "LDES",
@@ -22,9 +22,9 @@
   "author": "woutslabbinck <wout.slabbinck@ugent.be>",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/woutslabbinck/ldes-announcements/issues"
+    "url": "https://github.com/treecg/LDES-Announcements/issues"
   },
-  "homepage": "https://github.com/woutslabbinck/ldes-announcements#readme",
+  "homepage": "https://github.com/treecg/LDES-Announcements#readme",
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^4.33.0",
     "@typescript-eslint/parser": "^4.33.0",
@@ -46,10 +46,8 @@
     "@dexagod/rdf-retrieval": "^1.0.2",
     "n3": "^1.11.1",
     "rdf-validate-shacl": "^0.3.2",
-    "rdflib": "^2.2.7",
     "streamify-string": "^1.0.1",
     "rdf-parse": "^1.9.1",
-    "rdf-js": "^4.0.2",
-    "jsonld": "^5.2.0"
+    "rdf-js": "^4.0.2"
   }
 }

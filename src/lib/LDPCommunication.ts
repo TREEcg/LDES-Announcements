@@ -76,6 +76,9 @@ export async function postAnnouncement(announcement: Announce, rootURI: string):
     method: 'HEAD'
   });
   const linkHeaders = parse(rootResponse.headers.get('link'));
+  if (!linkHeaders) {
+    throw new Error('No Link Header present.');
+  }
   const inboxLink = linkHeaders[LDP.inbox];
   if (!inboxLink) {
     throw new Error('No http://www.w3.org/ns/ldp#inbox Link Header present.');

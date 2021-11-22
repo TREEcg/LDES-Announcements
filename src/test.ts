@@ -1,12 +1,11 @@
 import path from 'path';
 import { Collection } from '@treecg/tree-metadata-extraction/src/util/Util';
 import { Store } from 'n3';
-import { extractAnnouncementsMetadata } from './lib/Extraction';
-import { fetchAllAnnouncements, postAnnouncement } from './lib/LDPCommunication';
-import { AnnouncementConfig, createViewAnnouncement } from './lib/Writer';
+import { AnnouncementConfig } from './lib/Writer';
 import { View, DataSet, DataService, Announce } from './util/Interfaces';
 import { writeJSONLDToTurtleSync } from './util/Util';
 import { LDP, TREE } from './util/Vocabularies';
+import { fetchAllAnnouncements, postAnnouncement, extractAnnouncementsMetadata, createViewAnnouncement } from '.';
 
 const rdfRetrieval = require('@dexagod/rdf-retrieval');
 
@@ -93,7 +92,6 @@ async function writeAnnouncement() {
 
   // Store has te be created based on the config
   const rootFileName = config.fragmentation_strategy === 'substring' || config.fragmentation_strategy === 'subject-page' ? 'root.ttl' : '0.ttl';
-  // TODO: '../data/' MUST be replaced by config.storage in LDES action
   const storageLocation = path.join(module.path, config.storage, rootFileName);
   const store = await rdfRetrieval.getResourceAsStore(path.join(module.path, '../data/', rootFileName));
   const announcementConfig: AnnouncementConfig = {
@@ -120,9 +118,10 @@ async function writeAnnouncement() {
 async function executeFetchingAnnouncements() {
   const store = await fetchAllAnnouncements('https://tree.linkeddatafragments.org/announcements/');
   const announcements = await extractAnnouncementsMetadata(store);
+  console.log(`Number of announcements: ${announcements.announcements.size}`);
   announcements.views.forEach(value => {
-    console.log(value['dct:issued']['@value']);
-    console.log(value['@reverse'].view['@id']);
+    console.log(`View ID: ${value['@id']} | Created at: ${value['dct:issued']['@value']}`);
+    console.log(`Original LDES: ${value['@reverse'].view['@id']}`);
   });
 }
 
@@ -130,9 +129,9 @@ async function execute() {
   // Execute reading all announcements using root?
   // await executeRetrievingAllAnouncementsv2('https://tree.linkeddatafragments.org/announcements/1636985640000/');
   // Execute writing based on output of LDES-action
-  await writeAnnouncement();
+  // await writeAnnouncement();
   // ExecuteFetchingAnnouncements
-  // await executeFetchingAnnouncements();
+  await executeFetchingAnnouncements();
 }
 
 execute();
