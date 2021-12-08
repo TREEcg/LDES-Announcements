@@ -66,7 +66,11 @@ async function executeRetrievingAllAnouncementsv2(uri: string) {
 }
 
 async function writeAnnouncement() {
+  // Real inbox
   const inbox = 'https://tree.linkeddatafragments.org/announcements/';
+
+  // Temp inbox
+  // const inbox = 'https://tree.linkeddatafragments.org/announcements/new/';
 
   const substringConfig = {
     url: 'https://smartdata.dev-vlaanderen.be/base/gemeente',
@@ -129,9 +133,9 @@ async function execute() {
   // Execute reading all announcements using root?
   // await executeRetrievingAllAnouncementsv2('https://tree.linkeddatafragments.org/announcements/1636985640000/');
   // Execute writing based on output of LDES-action
-  // await writeAnnouncement();
+  await writeAnnouncement();
   // ExecuteFetchingAnnouncements
-  await executeFetchingAnnouncements();
+  // await executeFetchingAnnouncements();
 }
 
 execute();

@@ -119,7 +119,7 @@ function createAnnouncement(config: AnnouncementConfig): Announce {
     '@id': `#announce`,
     '@type': [ AS.Announce ],
     actor: { '@id': config.creatorURL },
-    object: 'temp'
+    object: { '@id': 'temp' }
   };
 
   return announcement;

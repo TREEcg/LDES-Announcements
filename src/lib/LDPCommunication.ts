@@ -84,7 +84,7 @@ export async function postAnnouncement(announcement: Announce, rootURI: string):
     throw new Error('No http://www.w3.org/ns/ldp#inbox Link Header present.');
   }
   // Location is the current inbox which can be written to
-  const location = `${inboxLink.url}/`;
+  const location = `${inboxLink.url}`;
   const response = await fetch(location, {
     method: 'POST',
     headers: {

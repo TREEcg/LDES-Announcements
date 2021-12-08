@@ -7,7 +7,7 @@ export interface Announce {
   '@id': string;
   '@type': string[];
   'actor': URI;
-  'object': View | DataSet | DataService | string;
+  'object': View | DataSet | DataService | URI;
 }
 
 // DCAT interface
