@@ -60,11 +60,10 @@ function retrieveFullObject(store: N3.Store, term: N3.Term, recursive = true, pr
 const createLiteral = (store: N3.Store, literal: N3.Literal): Literal => {
   const item: Literal = { '@value': literal.value };
 
-  if (literal.datatype) {
-    item['@type'] = literal.datatype.id;
-  }
   if (literal.language) {
     item['@language'] = literal.language;
+  } else if (literal.datatype) {
+    item['@type'] = literal.datatype.id;
   }
 
   return item;

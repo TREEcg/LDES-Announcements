@@ -133,9 +133,9 @@ async function execute() {
   // Execute reading all announcements using root?
   // await executeRetrievingAllAnouncementsv2('https://tree.linkeddatafragments.org/announcements/1636985640000/');
   // Execute writing based on output of LDES-action
-  await writeAnnouncement();
+  // await writeAnnouncement();
   // ExecuteFetchingAnnouncements
-  // await executeFetchingAnnouncements();
+  await executeFetchingAnnouncements();
 }
 
 execute();
