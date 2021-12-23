@@ -1,7 +1,7 @@
 {
   "name": "@treecg/ldes-announcements",
-  "version": "0.0.4",
-  "description": "",
+  "version": "0.0.5",
+  "description": "This library handles parsing and creating LDES announcements.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

@@ -1,14 +1,32 @@
+import * as fs from 'fs';
 import path from 'path';
 import { Collection } from '@treecg/tree-metadata-extraction/src/util/Util';
-import { Store } from 'n3';
+import { Store, Writer } from 'n3';
+import * as N3 from 'n3';
+import rdfParser from 'rdf-parse';
 import { AnnouncementConfig } from './lib/Writer';
 import { View, DataSet, DataService, Announce } from './util/Interfaces';
-import { writeJSONLDToTurtleSync } from './util/Util';
 import { LDP, TREE } from './util/Vocabularies';
 import { fetchAllAnnouncements, postAnnouncement, extractAnnouncementsMetadata, createViewAnnouncement } from '.';
 
 const rdfRetrieval = require('@dexagod/rdf-retrieval');
+export function writeJSONLDToTurtleSync(jsonLD: string, path: string): void {
+  const textStream = require('streamify-string')(jsonLD);
+  const stream = rdfParser.parse(textStream, { contentType: 'application/ld+json' });
+  const resultStore = new N3.Store();
 
+  resultStore.import(stream).on('end', (): void => {
+    const writer = new Writer();
+    let stringResult: string;
+
+    writer.addQuads(resultStore.getQuads(null, null, null, null));
+
+    writer.end((error, result) => {
+      stringResult = String(result);
+      fs.writeFileSync(path, stringResult);
+    });
+  });
+}
 // Can also be more modular by calling fetchFilteredREsourceIds(uri, [])
 export async function fetchResourceIds(containerUri: string): Promise<string []> {
   const store: Store = await rdfRetrieval.getResourceAsStore(containerUri);
@@ -67,10 +85,10 @@ async function executeRetrievingAllAnouncementsv2(uri: string) {
 
 async function writeAnnouncement() {
   // Real inbox
-  const inbox = 'https://tree.linkeddatafragments.org/announcements/';
+  // const inbox = 'https://tree.linkeddatafragments.org/announcements/';
 
   // Temp inbox
-  // const inbox = 'https://tree.linkeddatafragments.org/announcements/new/';
+  const inbox = 'http://localhost:3050/new/';
 
   const substringConfig = {
     url: 'https://smartdata.dev-vlaanderen.be/base/gemeente',
@@ -116,7 +134,8 @@ async function writeAnnouncement() {
   const response = await postAnnouncement(announcement, inbox);
   console.log(response.status);
   console.log(response.statusText);
-  console.log(response.headers);
+  // Console.log(response.headers);
+  console.log(await response.text());
 }
 
 async function executeFetchingAnnouncements() {
@@ -133,9 +152,9 @@ async function execute() {
   // Execute reading all announcements using root?
   // await executeRetrievingAllAnouncementsv2('https://tree.linkeddatafragments.org/announcements/1636985640000/');
   // Execute writing based on output of LDES-action
-  // await writeAnnouncement();
+  await writeAnnouncement();
   // ExecuteFetchingAnnouncements
-  await executeFetchingAnnouncements();
+  // await executeFetchingAnnouncements();
 }
 
 execute();

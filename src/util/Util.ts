@@ -5,11 +5,8 @@
  * Created on 29/10/2021
  *****************************************/
 
-import fs from 'fs';
 import { Literal } from '@treecg/tree-metadata-extraction/src/util/Util';
 import * as N3 from 'n3';
-import { Writer } from 'n3';
-import rdfParser from 'rdf-parse';
 import { DCT, LDES, RDF, TREE } from './Vocabularies';
 
 /**
@@ -121,20 +118,3 @@ export function makeViewContext(treeContext: string | Record<string, any> | unde
   return viewContext;
 }
 
-export function writeJSONLDToTurtleSync(jsonLD: string, path: string): void {
-  const textStream = require('streamify-string')(jsonLD);
-  const stream = rdfParser.parse(textStream, { contentType: 'application/ld+json' });
-  const resultStore = new N3.Store();
-
-  resultStore.import(stream).on('end', (): void => {
-    const writer = new Writer();
-    let stringResult: string;
-
-    writer.addQuads(resultStore.getQuads(null, null, null, null));
-
-    writer.end((error, result) => {
-      stringResult = String(result);
-      fs.writeFileSync(path, stringResult);
-    });
-  });
-}

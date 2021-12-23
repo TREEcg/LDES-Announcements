@@ -71,7 +71,7 @@ export async function fetchAllAnnouncements(uri: string): Promise<Store> {
   return await createResourceStore(resourceIds);
 }
 
-export async function postAnnouncement(announcement: Announce, rootURI: string): Promise<any> {
+export async function postAnnouncement(announcement: Announce, rootURI: string): Promise<Response> {
   const rootResponse = await fetch(rootURI, {
     method: 'HEAD'
   });
